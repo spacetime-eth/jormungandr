@@ -2,12 +2,18 @@ import Head from "next/head"
 import {useState} from "react"
 import styled from "styled-components"
 
-const SIZE = 4
+import {ethers} from "ethers"
+
+const SIZE = 10
 const TOTAL = SIZE * SIZE
-//const CELL: bigint = 2n ** BigInt(TOTAL)
+
+//const CELL: bigint = BigInt(2) ** BigInt(SIZE)
+const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+const RPC_URL = "http://127.0.0.1:8545/"
 
 export default function Home() {
-	const [value, setValue] = useState<bigint>(BigInt(0))
+	const [value, setValue] = useState<bigint>(0n)
+
 	return (
 		<div>
 			<Head>
@@ -17,7 +23,7 @@ export default function Home() {
 			<Main>
 				<Input onChange={setValue} value={value}/>
 				<Board>
-					{Array.from(Array(TOTAL), (_, i) =>  {
+					{Array.from(Array(TOTAL), (_, i) => {
 						const mask = BigInt(1 << i)
 						return (value & mask) != 0n
 					}).map((x, i) => <Circle filled={x} key={i.toString()}/>)}
@@ -61,3 +67,12 @@ const Board = styled.div`
   display: grid;
   grid-template-columns: repeat(${SIZE}, 1fr);
 `
+
+async function getCanvas() {
+	const abi = ["function getCanvas() view public returns (uint32[] memory)"]
+	const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
+	const signer = provider.getSigner()
+	const smartContract = new ethers.Contract(CONTRACT_ADDRESS, abi, provider)
+	const contractWithSigner = smartContract.connect(signer)
+	const neighbors = await contractWithSigner.getCanvas()
+}
