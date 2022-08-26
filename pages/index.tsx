@@ -1,18 +1,23 @@
 import Head from "next/head"
-import {useState} from "react"
+import {useEffect, useState} from "react"
 import styled from "styled-components"
+import JSBI from "jsbi"
 
 import {ethers} from "ethers"
 
-const SIZE = 10
-const TOTAL = SIZE * SIZE
+const ZERO = JSBI.BigInt(0)
+const ONE = JSBI.BigInt(1)
 
-//const CELL: bigint = BigInt(2) ** BigInt(SIZE)
+const SIZE = 64
+const TOTAL = SIZE * SIZE
+const CELLS = JSBI.exponentiate(JSBI.BigInt(2), JSBI.BigInt(TOTAL))
+const MASKS = Array.from(Array(TOTAL), (_, i) => JSBI.leftShift(ONE, JSBI.BigInt(i)))
+
 const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
 const RPC_URL = "http://127.0.0.1:8545/"
 
 export default function Home() {
-	const [value, setValue] = useState<bigint>(0n)
+	const [value, setValue] = useState<JSBI>(ZERO)
 
 	return (
 		<div>
@@ -21,12 +26,15 @@ export default function Home() {
 				<link rel="icon" href="/favicon.ico"/>
 			</Head>
 			<Main>
-				<Input onChange={setValue} value={value}/>
+				<Preview value={value}/>
 				<Board>
-					{Array.from(Array(TOTAL), (_, i) => {
-						const mask = BigInt(1 << i)
-						return (value & mask) != 0n
-					}).map((x, i) => <Circle filled={x} key={i.toString()}/>)}
+					{MASKS.map((mask, i) =>
+						<Circle
+							filled={isFilled({mask, value})}
+							key={i.toString()}
+							onClick={() => setValue(JSBI.bitwiseXor(value, mask))}
+						/>)
+					}
 				</Board>
 			</Main>
 			<footer>
@@ -35,17 +43,9 @@ export default function Home() {
 	)
 }
 
-function Input({onChange, value}: { onChange: (value: bigint) => void, value: bigint }) {
-	const [current, setCurrent] = useState(value.toString())
-
+function Preview({value}: { value: JSBI }) {
 	return (
-		<input
-			type="number"
-			value={current}
-			onChange={(e) => setCurrent(e.target.value)}
-			onBlur={(e) => onChange(BigInt(e.target.value))}
-			min={0}
-		/>
+		<span>{value.toString().padStart(CELLS.toString().length, "0")}</span>
 	)
 }
 
@@ -67,6 +67,10 @@ const Board = styled.div`
   display: grid;
   grid-template-columns: repeat(${SIZE}, 1fr);
 `
+
+function isFilled({mask, value}: { mask: JSBI, value: JSBI }) {
+	return JSBI.NE(JSBI.bitwiseAnd(value, mask), ZERO)
+}
 
 async function getCanvas() {
 	const abi = ["function getCanvas() view public returns (uint32[] memory)"]
