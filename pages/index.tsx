@@ -1,18 +1,18 @@
 import Head from "next/head"
-import {useRef, useState} from "react"
+import {useEffect, useRef, useState} from "react"
 import styled from "styled-components"
-
-import {ethers} from "ethers"
+import {BigNumber, ethers} from "ethers"
 
 const SIZE = 64
 
-const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+const CONTRACT_ADDRESS = "0x929e8eeD62760566b6E08564a6C040da13229487"
 const RPC_URL = "http://127.0.0.1:8545/"
 
-const grid: Array<boolean> = Array(64 * 64).fill(false)
+const grid: Array<boolean> = Array(SIZE * SIZE).fill(false)
 let painting: boolean | null = null
 
 export default function Home() {
+
 	return (
 		<div>
 			<Head>
@@ -25,11 +25,35 @@ export default function Home() {
 				</Board>
 				<button
 					onClick={() => {
+					}}
+				>
+					clear
+				</button>
+				<button
+					onClick={() => {
 						const value = grid.reduce(vectorToBigIntReducer, 0n)
-						alert(value.toString())
+						draw(value)
 					}}
 				>
 					Submit
+				</button>
+				<button
+					onClick={connect}
+				>
+					Connect Metamask
+				</button>
+				<button
+					onClick={start}
+				>
+					Start
+				</button>
+				<button
+					onClick={async () => {
+						const wea = await getCanvas()
+						console.log(wea)
+					}}
+				>
+					Get Canvas
 				</button>
 			</Main>
 			<footer>
@@ -71,9 +95,11 @@ function Cell({index}: { index: number }) {
 
 const Circle = styled.div<{ filled: boolean }>`
   border: 1px black solid;
+  border-left-width: 0px;
+  border-top-width: 0px;
   background-color: ${({filled}) => filled ? "black" : "white"};
-  width: 12px;
-  height: 12px;
+  width: 8px;
+  height: 8px;
 `
 
 const Main = styled.main`
@@ -89,10 +115,61 @@ const Board = styled.div`
 `
 
 async function getCanvas() {
-	const abi = ["function getCanvas() view public returns (uint32[] memory)"]
-	const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
+	const abi = [
+		"function getCanvas() view public returns (uint32[] memory)",
+		"function start() public returns (uint32)"
+	]
+	// @ts-ignore
+	const provider = new ethers.providers.Web3Provider(ethereum)
 	const signer = provider.getSigner()
 	const smartContract = new ethers.Contract(CONTRACT_ADDRESS, abi, provider)
 	const contractWithSigner = smartContract.connect(signer)
-	const neighbors = await contractWithSigner.getCanvas()
+	return await contractWithSigner.getCanvas()
+}
+
+async function start() {
+	const abi = [
+		"function getCanvas() view public returns (uint32[] memory)",
+		"function start() public returns (uint32)"
+	]
+	// @ts-ignore
+	const provider = new ethers.providers.Web3Provider(ethereum)
+	const signer = provider.getSigner()
+	const smartContract = new ethers.Contract(CONTRACT_ADDRESS, abi, provider)
+	const contractWithSigner = smartContract.connect(signer)
+
+	await contractWithSigner.start()
+}
+
+async function draw(value: bigint) {
+	const abi = [
+		"function draw(uint32 drawing) public returns (uint32)"
+	]
+	// @ts-ignore
+	const provider = new ethers.providers.Web3Provider(ethereum)
+	const signer = provider.getSigner()
+	const smartContract = new ethers.Contract(CONTRACT_ADDRESS, abi, provider)
+	const contractWithSigner = smartContract.connect(signer)
+
+	const bgnm = BigNumber.from(value)
+	console.log(value)
+	console.log(bgnm)
+	await contractWithSigner.draw(bgnm)
+}
+
+
+async function connect() {
+	// @ts-ignore
+	if (typeof window.ethereum !== "undefined") {
+		try {
+			// @ts-ignore
+			await ethereum.request({method: "eth_requestAccounts"})
+		} catch (error) {
+			console.log(error)
+		}
+		//const accounts = await ethereum.request({ method: "eth_accounts" })
+		//console.log(accounts)
+	} else {
+
+	}
 }
