@@ -1,18 +1,20 @@
 import Head from "next/head"
-import {useEffect, useRef, useState} from "react"
+import {useRef, useState} from "react"
 import styled from "styled-components"
 import {BigNumber, ethers} from "ethers"
 
-const SIZE = 64
+const CHUNKS_PER_ROW = 4
+const CHUNK_AMOUNT = 16
+const BOARD_LENGTH = 64
+const CHUNK_LENGTH = BOARD_LENGTH / CHUNKS_PER_ROW
 
 const CONTRACT_ADDRESS = "0x929e8eeD62760566b6E08564a6C040da13229487"
 const RPC_URL = "http://127.0.0.1:8545/"
 
-const grid: Array<boolean> = Array(SIZE * SIZE).fill(false)
+const grid: Array<Array<boolean>> = Array.from(Array(CHUNK_AMOUNT), () => Array(CHUNK_LENGTH * CHUNK_LENGTH).fill(false))
 let painting: boolean | null = null
 
 export default function Home() {
-
 	return (
 		<div>
 			<Head>
@@ -21,7 +23,7 @@ export default function Home() {
 			</Head>
 			<Main>
 				<Board>
-					{grid.map((_, i) => <Cell index={i} key={i.toString()}/>)}
+					{grid.map((_, i) => <MiniGrid index={i} key={i.toString()}/>)}
 				</Board>
 				<button
 					onClick={() => {
@@ -31,7 +33,7 @@ export default function Home() {
 				</button>
 				<button
 					onClick={() => {
-						const value = grid.reduce(vectorToBigIntReducer, 0n)
+						const value = grid.map(x => x.reduce(vectorToBigIntReducer, 0n))
 						draw(value)
 					}}
 				>
@@ -62,11 +64,19 @@ export default function Home() {
 	)
 }
 
+function MiniGrid({index}: { index: number }) {
+	return (
+		<Chunk>
+			{grid[index].map((_, i) => <Cell chunk={index} index={i} key={i.toString()}/>)}
+		</Chunk>
+	)
+}
+
 const vectorToBigIntReducer = (accumulator: bigint, current: boolean, i: number) =>
 	!current ? accumulator : accumulator + powerOfTwo(i)
 const powerOfTwo = (exponent: number) => BigInt(1) << BigInt(exponent)
 
-function Cell({index}: { index: number }) {
+function Cell({index, chunk}: { index: number, chunk: number }) {
 	const ref = useRef(0)
 	const [value, setValue] = useState<boolean>(false)
 
@@ -77,14 +87,14 @@ function Cell({index}: { index: number }) {
 				if (painting !== null) {
 					ref.current = performance.now()
 					setValue(painting)
-					grid[index] = painting
+					grid[chunk][index] = painting
 				}
 			}}
 			onMouseDown={() => {
 				ref.current = performance.now()
 				painting = !value
 				setValue(!value)
-				grid[index] = !value
+				grid[chunk][index] = !value
 			}}
 			onMouseUp={() => {
 				//TODO THIS SHOULD BE A GLOBAL EVENT
@@ -95,8 +105,8 @@ function Cell({index}: { index: number }) {
 
 const Circle = styled.div<{ filled: boolean }>`
   border: 1px black solid;
-  border-left-width: 0px;
-  border-top-width: 0px;
+  border-left-width: 0;
+  border-top-width: 0;
   background-color: ${({filled}) => filled ? "black" : "white"};
   width: 8px;
   height: 8px;
@@ -111,7 +121,12 @@ const Main = styled.main`
 
 const Board = styled.div`
   display: grid;
-  grid-template-columns: repeat(${SIZE}, 1fr);
+  grid-template-columns: repeat(${CHUNKS_PER_ROW}, 1fr);
+`
+
+const Chunk = styled.div`
+  display: grid;
+  grid-template-columns: repeat(${CHUNK_LENGTH}, 1fr);
 `
 
 async function getCanvas() {
@@ -141,7 +156,7 @@ async function start() {
 	await contractWithSigner.start()
 }
 
-async function draw(value: bigint) {
+async function draw(value: Array<bigint>) {
 	const abi = [
 		"function draw(uint32 drawing) public returns (uint32)"
 	]
