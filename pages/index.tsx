@@ -2,13 +2,10 @@ import Head from "next/head";
 import styled from "styled-components";
 import { BigNumber, ethers } from "ethers";
 
-const CONTRACT_ADDRESS =
-  process.env.CONTRACT_ADDRESS || "0x255DCcb7b7b8943A0F6b2D54e02f508aDfce0873";
-// const CONTRACT_ADDRESS = "0x255DCcb7b7b8943A0F6b2D54e02f508aDfce0873";
-const RPC_URL = "http://127.0.0.1:8545/";
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const Board = dynamic(() => import("../components/Board"), {
   ssr: false,
@@ -115,7 +112,6 @@ async function start() {
     "function start() public returns (uint32)",
   ];
   // @ts-ignore
-  console.log("ADDRESS", CONTRACT_ADDRESS);
   const provider = new ethers.providers.Web3Provider(ethereum);
   const signer = provider.getSigner();
   const smartContract = new ethers.Contract(CONTRACT_ADDRESS, abi, provider);
