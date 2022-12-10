@@ -1,6 +1,6 @@
 import getNeighbors, {Neighbors} from "./GetNeighbors"
 
-const expectations: Array<{value: number, neighbors: Neighbors}> = [
+const expectations: Array<{ value: number, neighbors: Neighbors }> = [
 	{value: 0, neighbors: {}},
 	{value: 1, neighbors: {bottom: 0}},
 	{value: 2, neighbors: {left: 0}},
@@ -27,11 +27,11 @@ const expectations: Array<{value: number, neighbors: Neighbors}> = [
 	{value: 23, neighbors: {right: 12, bottom: 11}},
 	{value: 24, neighbors: {right: 5, bottom: 12}},
 	{value: 25, neighbors: {bottom: 13}},
-	{value: 26, neighbors: {bottom: 14, left: 13}},
+	{value: 26, neighbors: {bottom: 14, left: 13}}
 ]
 
 describe("GetNeighbors should", () => {
-	expectations.map(({value, neighbors}) => it(`when called with ${value} returns ${JSON.stringify(neighbors)}` ,() =>
+	expectations.map(({value, neighbors}) => it(`when called with ${value} returns ${JSON.stringify(neighbors)}`, () =>
 		expect(getNeighbors(value)).toEqual(neighbors)
 	))
 })
