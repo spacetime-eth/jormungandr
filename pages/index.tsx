@@ -1,11 +1,11 @@
 import Head from "next/head"
 import styled from "styled-components"
-import {BigNumber, Contract, ethers} from "ethers"
+import { BigNumber, Contract, ethers } from "ethers"
 
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || ""
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || ""
 
 import dynamic from "next/dynamic"
-import {useEffect, useState} from "react"
+import { useEffect, useState } from "react"
 
 const Board = dynamic(() => import("../components/Board"), {
 	ssr: false
@@ -19,6 +19,7 @@ export default function Home() {
 			.fill(false)
 			.map((_, i) => !!(powerOfTwo(i) & initialValue))
 	)
+	const [hasReserved, setHasReserved] = useState(false)
 
 	const neighbors = [
 		Array(GRID_SIZE * GRID_SIZE)
@@ -51,7 +52,7 @@ export default function Home() {
 	async function connect() {
 		try {
 			// @ts-ignore
-			await ethereum.request({method: "eth_requestAccounts"})
+			await ethereum.request({ method: "eth_requestAccounts" })
 			setContract(getContract())
 			setMetamaskStatus(MetamaskStatus.Connected)
 		} catch (error) {
@@ -66,45 +67,57 @@ export default function Home() {
 		<div>
 			<Head>
 				<title>Ginnungagap</title>
-				<link rel="icon" href="/favicon.ico"/>
+				<link rel="icon" href="/favicon.ico" />
 			</Head>
 			<Main>
 				{metamaskStatus === MetamaskStatus.Missing && "Metamask not installed"}
 				{metamaskStatus === MetamaskStatus.NotConnected && <button onClick={connect}>Connect Metamask</button>}
 				{metamaskStatus === MetamaskStatus.Connected &&
-            <>
-                <Board
-                    neighbors={neighbors}
-                    gridSize={GRID_SIZE}
-                    cells={cells}
-                    setCells={setCells}
-                />
-                <button
-                    onClick={() => {
-											setCells(Array(GRID_SIZE * GRID_SIZE).fill(false))
-										}}
-                >
-                    clear
-                </button>
-                <button
-                    onClick={() => {
-											const value = cells.reduce(vectorToBigIntReducer, 0n)
-											draw(value, contract!)
-										}}
-                >
-                    Submit
-                </button>
-
-                <button onClick={() => start(contract!)}>Start</button>
-                <button
-                    onClick={async () => {
-											const wea = await getCanvas(contract!)
-											console.log(wea)
-										}}
-                >
-                    Get Canvas
-                </button>
-            </>
+					<>
+						<Board
+							neighbors={neighbors}
+							gridSize={GRID_SIZE}
+							cells={cells}
+							setCells={setCells}
+						/>
+						<button onClick={() => start(contract!)}>Start</button>
+						<button
+							onClick={() => {
+								setCells(Array(GRID_SIZE * GRID_SIZE).fill(false))
+							}}
+						>
+							Clear
+						</button>
+						{!hasReserved ? (<button
+							onClick={async () => {
+								await reserveCanvas(contract!)
+								setHasReserved(true)
+							}}
+						>
+							Reserve Canvas
+						</button>) : (
+							<>
+								<button
+									onClick={async () => {
+										const value = cells.reduce(vectorToBigIntReducer, 0n)
+										await draw(value, contract!)
+										setHasReserved(false)
+									}}
+								>
+									Draw
+								</button>
+								<button
+									onClick={async () => {
+										const wea = await getMyCanvas(contract!)
+										console.log(wea)
+									}}
+								>
+									Get Canvas
+								</button>
+							</>
+						)
+						}
+					</>
 				}
 			</Main>
 			<footer></footer>
@@ -126,8 +139,8 @@ const Main = styled.main`
   background-color: pink;
 `
 
-async function getCanvas(contract: Contract) {
-	return await contract.getCanvas()
+async function getMyCanvas(contract: Contract) {
+	return await contract.getMyCanvas()
 }
 
 async function start(contract: Contract) {
@@ -136,13 +149,21 @@ async function start(contract: Contract) {
 
 async function draw(value: bigint, contract: Contract) {
 	const bgnm = BigNumber.from(value)
-	await contract.draw(bgnm)
+	// await contract.draw(bgnm)
+
+	await contract.draw([bgnm])
+}
+
+async function reserveCanvas(contract: Contract) {
+	await contract.reserveCanvas()
 }
 
 function getContract() {
 	const abi = [
-		"function getCanvas() view public returns (uint32[] memory)",
-		"function start() public returns (uint32)"
+		"function getMyCanvas() view public returns (uint256[1][4] memory)",
+		"function start() public returns (uint32)",
+		"function draw(uint256[1] drawing) public",
+		"function reserveCanvas() public",
 	]
 	// @ts-ignore
 	const provider = new ethers.providers.Web3Provider(ethereum)
