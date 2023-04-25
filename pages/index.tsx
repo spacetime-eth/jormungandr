@@ -2,6 +2,7 @@ import Head from "next/head"
 import styled from "styled-components"
 import dynamic from "next/dynamic"
 import {useState} from "react"
+import {GRID_SIZE} from "../src/constants/CONSTANTS"
 import useWeb3, {MetamaskStatus} from "../src/hooks/useWeb3"
 
 const Board = dynamic(() => import("../components/Board"), {
@@ -9,7 +10,6 @@ const Board = dynamic(() => import("../components/Board"), {
 })
 
 export default function Home() {
-	const GRID_SIZE = 16
 	const initialValue = 2n
 	const [cells, setCells] = useState(
 		Array(GRID_SIZE * GRID_SIZE)
@@ -17,23 +17,8 @@ export default function Home() {
 			.map((_, i) => !!(powerOfTwo(i) & initialValue))
 	)
 	const [hasReserved, setHasReserved] = useState(false)
-	const [hasStarted, setHasStarted] = useState(true)
 	const {connect, start, draw, reserveCanvas, getMyCanvas, metamaskStatus} = useWeb3()
-
-	const neighbors = [
-		Array(GRID_SIZE * GRID_SIZE)
-			.fill(false)
-			.map((_, i) => !!(i % 2)),
-		Array(GRID_SIZE * GRID_SIZE)
-			.fill(false)
-			.map((_, i) => !(i % 3)),
-		Array(GRID_SIZE * GRID_SIZE)
-			.fill(false)
-			.map((_, i) => !(i % 4)),
-		Array(GRID_SIZE * GRID_SIZE)
-			.fill(false)
-			.map((_, i) => !!(i % 5))
-	]
+	const [neighbors, setNeighbors] = useState<Array<Array<boolean>>>([])
 
 	return (
 		<div>
@@ -46,15 +31,10 @@ export default function Home() {
 				{metamaskStatus === MetamaskStatus.NotConnected && <button onClick={connect}>Connect Metamask</button>}
 				{metamaskStatus === MetamaskStatus.Connected &&
             <>
-							{!hasStarted && <button onClick={() => start()}>Start</button>}
-							{hasStarted && hasReserved &&
+                <button onClick={() => start()}>Start</button>
+							{hasReserved &&
                   <>
-                      <Board
-                          neighbors={neighbors}
-                          gridSize={GRID_SIZE}
-                          cells={cells}
-                          setCells={setCells}
-                      />
+                      <Board neighbors={neighbors} cells={cells} setCells={setCells}/>
                       <button onClick={() => {
 												setCells(Array(GRID_SIZE * GRID_SIZE).fill(false))
 											}}>
@@ -69,20 +49,14 @@ export default function Home() {
                       >
                           Draw
                       </button>
-                      <button
-                          onClick={async () => {
-														const wea = await getMyCanvas()
-														console.log(wea)
-													}}
-                      >
-                          Get Canvas
-                      </button>
                   </>
 							}
-							{hasStarted && !hasReserved &&
+							{!hasReserved &&
                   <button
                       onClick={async () => {
-												await reserveCanvas()
+												const neighbors = (await reserveCanvas()).map(toBinaryArray)
+												console.log(neighbors)
+												setNeighbors(neighbors)
 												setHasReserved(true)
 											}}
                   >
@@ -110,3 +84,9 @@ const Main = styled.main`
   align-items: center;
   background-color: pink;
 `
+
+const toBinaryArray = (value: bigint) => Array(GRID_SIZE * GRID_SIZE)
+	.fill(false)
+	.map((_, i) => (mask(i) & value) > 0n)
+
+const mask = (value: number) => 1n << BigInt(value)

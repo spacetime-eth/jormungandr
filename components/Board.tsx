@@ -1,24 +1,21 @@
-import {useRef, useState} from "react"
+import {useRef} from "react"
 import {Layer, Rect, Stage} from "react-konva"
+import {GRID_SIZE} from "../src/constants/CONSTANTS"
 
 type BoardProps = {
 	neighbors: boolean[][];
-	gridSize: number;
 	cells: boolean[];
 	setCells: (cells: any) => void;
 };
 
 export default function Board(props: BoardProps) {
 	const painting = useRef<null | boolean>(null)
-	const PIXEL_SIZE = 24 // change based on viewport
-	const {neighbors, gridSize, cells, setCells} = props
+	const {neighbors, cells, setCells} = props
 
-	const side = PIXEL_SIZE * gridSize
-	const hypotenuse = Math.sqrt(side ** 2 * 2)
+	const hypotenuse = Math.sqrt(SIDE_SIZE ** 2 * 2)
 
 	return (
 		<Stage
-			onClick={(e) => console.log(e)}
 			width={hypotenuse}
 			height={hypotenuse}
 			style={{border: "1px solid red"}}
@@ -30,8 +27,8 @@ export default function Board(props: BoardProps) {
 							<Rect
 								fill={value ? "red" : "white"}
 								key={i.toString()}
-								x={(i % gridSize) * PIXEL_SIZE + side / 2}
-								y={Math.floor(i / gridSize) * PIXEL_SIZE - side / 2}
+								x={(i % GRID_SIZE) * PIXEL_SIZE + SIDE_SIZE / 2}
+								y={Math.floor(i / GRID_SIZE) * PIXEL_SIZE - SIDE_SIZE / 2}
 								height={PIXEL_SIZE}
 								width={PIXEL_SIZE}
 								stroke={"black"}
@@ -45,7 +42,7 @@ export default function Board(props: BoardProps) {
 								onMouseUp={() => {
 									painting.current = null
 								}}
-								onMouseEnter={(e) => {
+								onMouseEnter={() => {
 									if (painting.current !== null) {
 										const aux = [...cells]
 										aux[i] = painting.current
@@ -55,72 +52,58 @@ export default function Board(props: BoardProps) {
 							/>
 						)
 					})}
-					{neighbors[0].map((value, i) => {
-						return (
-							<Rect
-								fill={value ? "green" : "white"}
-								key={i.toString()}
-								x={(i % gridSize) * PIXEL_SIZE + side / 2}
-								y={Math.floor(i / gridSize) * PIXEL_SIZE - side / 2 - side}
-								height={PIXEL_SIZE}
-								width={PIXEL_SIZE}
-								stroke={"black"}
-								strokeWidth={0.5}
-							/>
-						)
-					})}
-					{neighbors[1].map((value, i) => {
-						return (
-							<Rect
-								fill={value ? "green" : "white"}
-								key={i.toString()}
-								x={(i % gridSize) * PIXEL_SIZE + side / 2 + side}
-								y={Math.floor(i / gridSize) * PIXEL_SIZE - side / 2}
-								height={PIXEL_SIZE}
-								width={PIXEL_SIZE}
-								stroke={"black"}
-								strokeWidth={0.5}
-							/>
-						)
-					})}
-					{neighbors[2].map((value, i) => {
-						return (
-							<Rect
-								fill={value ? "green" : "white"}
-								key={i.toString()}
-								x={(i % gridSize) * PIXEL_SIZE + side / 2}
-								y={Math.floor(i / gridSize) * PIXEL_SIZE - side / 2 + side}
-								height={PIXEL_SIZE}
-								width={PIXEL_SIZE}
-								stroke={"black"}
-								strokeWidth={0.5}
-							/>
-						)
-					})}
-					{neighbors[3].map((value, i) => {
-						return (
-							<Rect
-								fill={value ? "green" : "white"}
-								key={i.toString()}
-								x={(i % gridSize) * PIXEL_SIZE + side / 2 - side}
-								y={Math.floor(i / gridSize) * PIXEL_SIZE - side / 2}
-								height={PIXEL_SIZE}
-								width={PIXEL_SIZE}
-								stroke={"black"}
-								strokeWidth={0.5}
-							/>
-						)
-					})}
+					<Neighbors neighbors={neighbors}/>
 				</>
 			</Layer>
 		</Stage>
 	)
 }
 
-const vectorToBigIntReducer = (
-	accumulator: bigint,
-	current: boolean,
-	i: number
-) => (!current ? accumulator : accumulator + powerOfTwo(i))
+function Neighbors({neighbors}: { neighbors: Array<Array<boolean>> }) {
+	return (
+		<>
+			<Canvas neighbors={neighbors[0]} yOffset={-SIDE_SIZE}/>
+			<Canvas neighbors={neighbors[1]} xOffset={SIDE_SIZE}/>
+			<Canvas neighbors={neighbors[2]} yOffset={SIDE_SIZE}/>
+			<Canvas neighbors={neighbors[3]} xOffset={-SIDE_SIZE}/>
+		</>
+	)
+}
 
-const powerOfTwo = (exponent: number) => BigInt(1) << BigInt(exponent)
+function Canvas({
+									neighbors,
+									xOffset = 0,
+									yOffset = 0
+								}: { xOffset?: number, yOffset?: number, neighbors: Array<boolean> }) {
+	return (
+		<>
+			{neighbors.map((value, i) => {
+				return (
+					<Pixel
+						key={i.toString()}
+						color={value ? "darkgreen" : "darkgrey"}
+						x={(i % GRID_SIZE) * PIXEL_SIZE + SIDE_SIZE / 2 + xOffset}
+						y={Math.floor(i / GRID_SIZE) * PIXEL_SIZE - SIDE_SIZE / 2 + yOffset}
+					/>
+				)
+			})}
+		</>
+	)
+}
+
+function Pixel({color, x, y}: { x: number, y: number, color: string }) {
+	return (
+		<Rect
+			fill={color}
+			x={x}
+			y={y}
+			height={PIXEL_SIZE}
+			width={PIXEL_SIZE}
+			stroke={"black"}
+			strokeWidth={0.5}
+		/>
+	)
+}
+
+const PIXEL_SIZE = 24 // change based on viewport
+const SIDE_SIZE = PIXEL_SIZE * GRID_SIZE

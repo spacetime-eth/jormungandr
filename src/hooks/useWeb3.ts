@@ -41,25 +41,27 @@ export default function useWeb3() {
 	}, [])
 
 	const start = useCallback(async () => {
-		if (contract === null || provider || null) return
+		if (contract === null || provider === null) return
 		await contract.start()
-	}, [])
+	}, [contract, provider])
 
 	const getMyCanvas = useCallback(async () => {
-		if (contract === null || provider || null) return
+		if (contract === null || provider === null) return
 		return await contract.getMyCanvas()
-	}, [])
+	}, [contract, provider])
 
 	const draw = useCallback(async (value: bigint) => {
-		if (contract === null || provider || null) return
+		if (contract === null || provider === null) return
 		const bgnm = BigNumber.from(value)
 		await contract.draw([bgnm])
-	}, [])
+	}, [contract, provider])
 
 	const reserveCanvas = useCallback(async () => {
-		if (contract === null || provider || null) return
-		await contract.reserveCanvas()
-	}, [])
+		if (contract === null || provider === null) return
+		const tsx = await contract.reserveCanvas()
+		await tsx.wait(0)
+		return (await contract.getMyCanvas()).map((x: any) => BigInt(x[0]._hex))
+	}, [contract, provider])
 
 	return {connect, start, draw, getMyCanvas, reserveCanvas, metamaskStatus}
 }
