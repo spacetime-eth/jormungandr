@@ -40,11 +40,6 @@ export default function useWeb3() {
 		}
 	}, [])
 
-	const start = useCallback(async () => {
-		if (contract === null || provider === null) return
-		await contract.start()
-	}, [contract, provider])
-
 	const getMyCanvas = useCallback(async () => {
 		if (contract === null || provider === null) return
 		return await contract.getMyCanvas()
@@ -63,7 +58,7 @@ export default function useWeb3() {
 		return (await contract.getMyCanvas()).map((x: any) => BigInt(x[0]._hex))
 	}, [contract, provider])
 
-	return {connect, start, draw, getMyCanvas, reserveCanvas, metamaskStatus}
+	return {connect, draw, getMyCanvas, reserveCanvas, metamaskStatus}
 }
 
 export enum MetamaskStatus {
@@ -78,7 +73,6 @@ const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || ""
 
 const abi = [
 	"function getMyCanvas() view public returns (uint256[1][4] memory)",
-	"function start() public returns (uint32)",
 	"function draw(uint256[1] drawing) public",
 	"function reserveCanvas() public"
 ]

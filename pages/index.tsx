@@ -17,7 +17,7 @@ export default function Home() {
 			.map((_, i) => !!(powerOfTwo(i) & initialValue))
 	)
 	const [hasReserved, setHasReserved] = useState(false)
-	const {connect, start, draw, reserveCanvas, getMyCanvas, metamaskStatus} = useWeb3()
+	const {connect, draw, reserveCanvas, metamaskStatus} = useWeb3()
 	const [neighbors, setNeighbors] = useState<Array<Array<boolean>>>([])
 
 	return (
@@ -31,7 +31,6 @@ export default function Home() {
 				{metamaskStatus === MetamaskStatus.NotConnected && <button onClick={connect}>Connect Metamask</button>}
 				{metamaskStatus === MetamaskStatus.Connected &&
             <>
-                <button onClick={() => start()}>Start</button>
 							{hasReserved &&
                   <>
                       <Board neighbors={neighbors} cells={cells} setCells={setCells}/>
