@@ -54,7 +54,6 @@ export default function Home() {
                   <button
                       onClick={async () => {
 												const neighbors = (await reserveCanvas()).map(toBinaryArray)
-												console.log(neighbors)
 												setNeighbors(neighbors)
 												setHasReserved(true)
 											}}
